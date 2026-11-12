@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>EJ Binary Subset Prime Oracle</title>
+<meta name="description" content="Test primality using Elizabeth Johnson's 3 Core Asks of the Binary Layer of the Subset System and Mod-9 Counterflow — zero factorization.">
+<meta property="og:title" content="EJ Binary Subset Prime Oracle">
+<meta property="og:description" content="Explore primality through the 3 Core Asks: 2-bit end-digit keys, 30-block subset bytes, and rise/fall mod-9 skeletons without standard factorization.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23050a0e'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%2300f0ff' font-family='monospace'%3E3Q%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #070b10;
+    --panel: #0d141d;
+    --panel-2: #111b27;
+    --border: #1e2d3d;
+    --accent: #00e5ff;
+    --accent-dim: rgba(0, 229, 255, 0.14);
+    --prime: #00e676;
+    --prime-dim: rgba(0, 230, 118, 0.14);
+    --comp: #ff5252;
+    --comp-dim: rgba(255, 82, 82, 0.14);
+    --warn: #ffab40;
+    --text: #e6edf3;
+    --muted: #8b9bb0;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: radial-gradient(circle at 50% 0%, #0e1926 0%, var(--bg) 65%);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.55;
+    min-height: 100vh;
+    padding: 28px 16px 64px;
+  }
+
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(0, 229, 255, 0.35);
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: clamp(1.6rem, 4.5vw, 2.3rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle {
+    margin: 0 auto;
+    max-width: 60ch;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+    margin-bottom: 18px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  input[type="text"] {
+    flex: 1 1 240px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 1.2rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+
+  button {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 12px 18px;
+    cursor: pointer;
+    transition: transform 0.08s, filter 0.15s, background 0.15s;
+  }
+
+  button:active { transform: translateY(1px); }
+
+  button.primary {
+    background: var(--accent);
+    color: #031018;
+    border-color: var(--accent);
+  }
+
+  button.primary:hover { filter: brightness(1.08); }
+
+  button.secondary {
+    background: var(--panel-2);
+    color: var(--text);
+  }
+
+  button.secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Verdict Banner */
+  .verdict-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 18px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    margin-bottom: 20px;
+  }
+
+  .verdict-box.is-prime {
+    border-color: rgba(0, 230, 118, 0.45);
+    background: linear-gradient(135deg, var(--prime-dim), var(--bg) 70%);
+  }
+
+  .verdict-box.is-comp {
+    border-color: rgba(255, 82, 82, 0.45);
+    background: linear-gradient(135deg, var(--comp-dim), var(--bg) 70%);
+  }
+
+  .verdict-title {
+    font-family: var(--mono);
+    font-size: clamp(1.25rem, 3.5vw, 1.65rem);
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .is-prime .verdict-title { color: var(--prime); }
+  .is-comp .verdict-title { color: var(--comp); }
+
+  .verdict-sub {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 4px;
+  }
+
+  .score-pill {
+    text-align: right;
+    font-family: var(--mono);
+  }
+
+  .score-pill .num {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .score-pill .lbl {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* 3 Asks Accordions / Cards */
+  h2 {
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 22px 0 10px;
+    font-family: var(--mono);
+  }
+
+  .ask-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .ask-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .ask-title {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+  }
+
+  .ask-status {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+
+  .status-pass { background: var(--prime-dim); color: var(--prime); border: 1px solid rgba(0,230,118,0.3); }
+  .status-fail { background: var(--comp-dim); color: var(--comp); border: 1px solid rgba(255,82,82,0.3); }
+
+  .ask-body {
+    font-size: 0.92rem;
+    color: var(--muted);
+  }
+
+  .ask-body strong { color: var(--text); }
+
+  /* Byte Strip & Rise/Fall */
+  .byte-strip {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .slot-cell {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 4px;
+    text-align: center;
+    font-family: var(--mono);
+  }
+
+  .slot-cell.active {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+  }
+
+  .slot-cell .res { font-size: 0.7rem; color: var(--muted); }
+  .slot-cell .bit-val { font-size: 1rem; font-weight: 700; margin: 2px 0; }
+  .slot-cell.active .bit-val { color: var(--accent); }
+  .slot-cell .cand { font-size: 0.65rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+
+  .rf-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    font-family: var(--mono);
+    margin-top: 8px;
+  }
+
+  .rf-bit {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .rf-0 { background: rgba(0, 229, 255, 0.15); color: var(--accent); }
+  .rf-1 { background: rgba(255, 171, 64, 0.15); color: var(--warn); }
+
+  .share-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .error-msg {
+    color: var(--comp);
+    font-family: var(--mono);
+    padding: 12px;
+    background: var(--comp-dim);
+    border: 1px solid rgba(255, 82, 82, 0.4);
+    border-radius: 10px;
+  }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin-top: 24px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="badge">Zero Factorization · The 3 Core Asks</div>
+    <h1>EJ Binary Subset Prime Oracle</h1>
+    <p class="subtitle">
+      Evaluating primality through Elizabeth Johnson’s 3 Core Asks of the Binary Layer of the Subset System and Mod-9 Counterflow.
+    </p>
+  </header>
+
+  <section class="card">
+    <div class="input-row">
+      <input type="text" id="numInput" inputmode="numeric" placeholder="Enter integer (e.g. 102197)" autocomplete="off" autofocus>
+      <button class="primary" id="checkBtn" type="button">Run 3 Asks</button>
+      <button class="secondary" id="randBtn" type="button">Random Odd</button>
+    </div>
+    <div class="presets">
+      <span>Examples:</span>
+      <button class="chip" type="button" data-val="102197">102197</button>
+      <button class="chip" type="button" data-val="102199">102199</button>
+      <button class="chip" type="button" data-val="999983">999983</button>
+      <button class="chip" type="button" data-val="561">561</button>
+      <button class="chip" type="button" data-val="1000003">1000003</button>
+    </div>
+  </section>
+
+  <section id="output" class="card" aria-live="polite"></section>
+
+  <footer>
+    Built on Elizabeth Johnson’s Alternate Base Prime Number Pattern &amp; Twin Prime Counterflow Model · Pure Browser JS
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const END_DIGIT_BITS = { 1: "00", 3: "01", 7: "10", 9: "11" };
+  const RESIDUES_MOD30 = [1, 7, 11, 13, 17, 19, 23, 29];
+  const ADMISSIBLE_MOD9 = [1, 2, 4, 5, 7, 8];
+  const TWIN_CLASS_LOW = { 2: "(2, 4)", 5: "(5, 7)", 8: "(8, 1)" };
+  const TWIN_CLASS_HIGH = { 4: "(2, 4)", 7: "(5, 7)", 1: "(8, 1)" };
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"]/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"
+    }[c]));
+  }
+
+  function evaluateThreeAsks(nBig) {
+    if (nBig < 2n) {
+      return {
+        isCandidate: false,
+        verdict: "NOT PRIME",
+        score: 0.01,
+        asks: []
+      };
+    }
+
+    if (nBig === 2n || nBig === 3n || nBig === 5n) {
+      return {
+        isCandidate: true,
+        verdict: "AXIOMATIC BASE PRIME",
+        score: 0.99,
+        asks: [
+          { title: "Ask 1 · Binary Form", pass: true, detail: `${nBig} is an axiomatic generator prime (2, 3, or 5).` },
+          { title: "Ask 2 · 30-Block Byte", pass: true, detail: `Base generator slot.` },
+          { title: "Ask 3 · Rise/Fall & Mod-9", pass: true, detail: `Core base prime flow.` }
+        ]
+      };
+    }
+
+    const digit = Number(nBig % 10n);
+    const mod30 = Number(nBig % 30n);
+    const mod9 = Number(nBig % 9n);
+    const counter = nBig / 10n;
+    const block = nBig / 30n;
+    const slot = RESIDUES_MOD30.indexOf(mod30);
+    const bits = END_DIGIT_BITS[digit] || null;
+    const mod9Adm = ADMISSIBLE_MOD9.includes(mod9);
+
+    // Ask 1: Binary Representation & 2-Bit End-Digit Key
+    const ask1Pass = bits !== null;
+    const ask1Detail = ask1Pass
+      ? `Binary form: 10 × ${counter} + ${digit} (2-bit end-digit key: ${bits})`
+      : `End digit ${digit} is forbidden in the subset language (must be 1, 3, 7, or 9).`;
+
+    // Ask 2: 30-Block Subset Byte & Slot
+    const ask2Pass = slot !== -1;
+    const blockStart = block * 30n;
+    const ask2Detail = ask2Pass
+      ? `Residue ${mod30} occupies Slot ${slot} of 7 inside 30-block #${block} (Formula: 30 × ${block} + ${mod30}).`
+      : `Residue ${mod30} is not coprime to 30 — zero slot bit in block #${block}.`;
+
+    // Ask 3: Rise/Fall Skeleton & Mod-9 Counterflow
+    const ask3Pass = mod9Adm;
+    let twinNote = "Admissible mod-9 flow";
+    if (TWIN_CLASS_LOW[mod9]) twinNote = `Lower twin channel ${TWIN_CLASS_LOW[mod9]} (partner n + 2)`;
+    if (TWIN_CLASS_HIGH[mod9]) twinNote = `Upper twin channel ${TWIN_CLASS_HIGH[mod9]} (partner n − 2)`;
+    const ask3Detail = ask3Pass
+      ? `Mod-9 indicator ${(mod9 / 9).toFixed(9)} (residue ${mod9}) · ${twinNote}`
+      : `Mod-9 indicator ${(mod9 / 9).toFixed(9)} (residue ${mod9}) — blocked by 3-flow.`;
+
+    // Subset binary scoring
+    let sub = 0.32;
+    if (!ask1Pass) sub = 0.02;
+    else if (!ask2Pass) sub = 0.03;
+    else {
+      const m6 = Number(nBig % 6n);
+      sub += (m6 === 1 || m6 === 5) ? 0.20 : -0.32;
+      sub += 0.05;
+      const slotBonus = [0.03, 0.06, 0.09, 0.09, 0.08, 0.07, 0.05, 0.04];
+      sub += slotBonus[slot];
+      sub += (nBig % 7n !== 0n) ? 0.06 : -0.28;
+      sub += (nBig % 11n !== 0n) ? 0.04 : -0.20;
+      sub += (nBig % 13n !== 0n) ? 0.03 : -0.16;
+      if (counter % 10n !== 0n) sub += 0.02;
+      if (mod9Adm) sub += 0.03;
+      sub = Math.max(0.04, Math.min(0.94, sub));
+    }
+
+    let m9Score = mod9Adm ? 0.50 : 0.12;
+    if (TWIN_CLASS_LOW[mod9] || TWIN_CLASS_HIGH[mod9]) m9Score += 0.15;
+    m9Score = Math.max(0.05, Math.min(0.92, m9Score));
+
+    const blended = 0.60 * sub + 0.40 * m9Score;
+    const allPass = ask1Pass && ask2Pass && ask3Pass;
+    const isCandidate = allPass && blended >= 0.60;
+
+    let verdict = allPass ? (isCandidate ? "SUBSET PRIME CANDIDATE" : "LIKELY COMPOSITE") : "COMPOSITE (GATE REJECTED)";
+
+    // Block slots for visualization
+    const blockSlots = RESIDUES_MOD30.map((res, idx) => {
+      const cand = blockStart + BigInt(res);
+      const cDigit = Number(cand % 10n);
+      const cMod9 = Number(cand % 9n);
+      const open = ADMISSIBLE_MOD9.includes(cMod9);
+      return { idx, res, cand, digit: cDigit, open, isTarget: idx === slot };
+    });
+
+    const openDigits = blockSlots.filter(s => s.open).map(s => s.digit);
+    const rfBits = [];
+    for (let i = 0; i < openDigits.length - 1; i++) {
+      rfBits.push(openDigits[i + 1] > openDigits[i] ? "0" : "1");
+    }
+
+    return {
+      isCandidate,
+      verdict,
+      score: blended,
+      asks: [
+        { title: "Ask 1 · Binary Form & End-Digit Key", pass: ask1Pass, detail: ask1Detail },
+        { title: "Ask 2 · 30-Block Subset Byte & Slot", pass: ask2Pass, detail: ask2Detail },
+        { title: "Ask 3 · Rise/Fall Skeleton & Mod-9 Flow", pass: ask3Pass, detail: ask3Detail }
+      ],
+      blockSlots,
+      openDigits,
+      rfBits
+    };
+  }
+
+  function render(rawInput) {
+    const out = document.getElementById("output");
+    const cleaned = String(rawInput).replace(/[\s,_]/g, "");
+
+    if (!cleaned || !/^\d+$/.test(cleaned)) {
+      out.innerHTML = `<div class="error-msg">Please enter a valid non-negative integer.</div>`;
+      return;
+    }
+
+    const nBig = BigInt(cleaned);
+    const r = evaluateThreeAsks(nBig);
+
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("n", cleaned);
+      window.history.replaceState({}, "", url);
+    } catch (_) {}
+
+    const boxClass = r.isCandidate ? "is-prime" : "is-comp";
+    let html = `
+      <div class="verdict-box ${boxClass}">
+        <div>
+          <div class="verdict-title">${escapeHtml(r.verdict)}</div>
+          <div class="verdict-sub">Result evaluated purely through the 3 Core Asks (Zero Factorization).</div>
+        </div>
+        <div class="score-pill">
+          <div class="num">${r.score.toFixed(3)}</div>
+          <div class="lbl">Oracle Score</div>
+        </div>
+      </div>
+
+      <h2>The 3 Core Asks</h2>
+    `;
+
+    r.asks.forEach((ask, idx) => {
+      html += `
+        <div class="ask-card">
+          <div class="ask-header">
+            <span class="ask-title">Ask ${idx + 1}: ${escapeHtml(ask.title.split("·")[1].trim())}</span>
+            <span class="ask-status ${ask.pass ? "status-pass" : "status-fail"}">${ask.pass ? "PASS [1]" : "FAIL [0]"}</span>
+          </div>
+          <div class="ask-body">${escapeHtml(ask.detail)}</div>
+        </div>
+      `;
+    });
+
+    if (nBig >= 6n) {
+      html += `
+        <h2>30-Block Subset Byte Map</h2>
+        <div class="byte-strip">
+          ${r.blockSlots.map(s => `
+            <div class="slot-cell ${s.isTarget ? "active" : ""}" title="${s.cand}">
+              <div class="res">+${s.res}</div>
+              <div class="bit-val">${s.open ? "1" : "0"}</div>
+              <div class="cand">end ${s.digit}</div>
+            </div>
+          `).join("")}
+        </div>
+
+        <h2>Rise / Fall Skeleton</h2>
+        <div class="ask-card">
+          <div class="rf-row">
+            <span style="color: var(--muted); font-size: 0.82rem;">Digits [${r.openDigits.join(" → ")}]:</span>
+            ${r.rfBits.map(b => `<span class="rf-bit rf-${b}">${b} (${b === "0" ? "rise" : "fall"})</span>`).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    const shareText = encodeURIComponent(`Tested ${cleaned} in EJ's 3-Ask Subset Binary Prime Oracle (no factorization!):\n• Verdict: ${r.verdict}\n• Score: ${r.score.toFixed(3)}\n`);
+    const shareUrl = encodeURIComponent(window.location.href);
+
+    html += `
+      <div class="share-bar">
+        <span style="color: var(--muted); font-size: 0.85rem;">Share test on X:</span>
+        <a href="https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
+          <button class="secondary" type="button">Post Result on X</button>
+        </a>
+      </div>
+    `;
+
+    out.innerHTML = html;
+  }
+
+  const input = document.getElementById("numInput");
+  document.getElementById("checkBtn").addEventListener("click", () => render(input.value));
+  input.addEventListener("keydown", e => { if (e.key === "Enter") render(input.value); });
+
+  document.querySelectorAll(".chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      input.value = btn.dataset.val;
+      render(input.value);
+    });
+  });
+
+  document.getElementById("randBtn").addEventListener("click", () => {
+    const ends = [1, 3, 7, 9];
+    const base = Math.floor(1000 + Math.random() * 999000);
+    const d = ends[Math.floor(Math.random() * ends.length)];
+    const val = `${base}${d}`;
+    input.value = val;
+    render(val);
+  });
+
+  const params = new URLSearchParams(window.location.search);
+  const initial = params.get("n") || "102197";
+  input.value = initial;
+  render(initial);
+})();
+</script>
+</body>
+</html>
